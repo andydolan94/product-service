@@ -1,83 +1,89 @@
-The attached project is a poorly written products API.
+# Xero “RefactorThis” Project
 
-Your job, should you choose to accept it, is to make changes to this project to make it better. Simple. There are no rules, changes are not limited to pure refactors.
+## Initial steps
 
-There is no time limit (we all work at different speed!), but as a guideline, we recommend spending between 2-4 hours on the exercise. 
+- Installed the application on my Windows machine.
+- Updated the project from `v4.5.2` → `v4.8`. Updating the major version would likely break the application however updating the minor version would be beneficial for security.
 
-Please consider all aspects of good software engineering (including but not limited to design, reliability, readability, extensibility, quality) and show us how you'll make it #beautiful.
+## Separating and renaming the models
 
-Once completed, send back your solution in a zip file (source code only please to keep the zip small) and include a new README describing the improvements you have made and the rationale behind those decisions. 
+Separated all the models into their own class files.
 
-Good luck!
+- Product
+- Products
+- ProductOption
+- ProductOptions
 
-## Instructions
+## Renamed the project to ProductService
 
-To set up the project:
+There were issues with inconsistent namespacing, where there would be instances of `refactor_this` crossing over with `refactor_me`. This was especially noticeable with creating new classes where they would reference the wrong namespace. Snake casing is also an issue when everything else in the project uses UpperCamelCase.
 
-* Open project in VS.
-* Restore nuget packages and rebuild.
-* Run the project.
+## Moved the connection string out of the helpers file and into the web config file & Deleted the Helpers file
 
-There should be these endpoints:
+Having a helpers file in the Models directory felt very inappropriate. That’s core functionality that needs to be initialised on startup. The connection string also works in the web config file as well, and developers can target specifically which environment they want the database to be connected.
 
-1. `GET /products` - gets all products.
-2. `GET /products?name={name}` - finds all products matching the specified name.
-3. `GET /products/{id}` - gets the project that matches the specified ID - ID is a GUID.
-4. `POST /products` - creates a new product.
-5. `PUT /products/{id}` - updates a product.
-6. `DELETE /products/{id}` - deletes a product and its options.
-7. `GET /products/{id}/options` - finds all options for a specified product.
-8. `GET /products/{id}/options/{optionId}` - finds the specified product option for the specified product.
-9. `POST /products/{id}/options` - adds a new product option to the specified product.
-10. `PUT /products/{id}/options/{optionId}` - updates the specified product option.
-11. `DELETE /products/{id}/options/{optionId}` - deletes the specified product option.
+- Unsure about which configuration I would target for the `Database.mdf` file, however I’d assume it would go into debug rather than production.
 
-All models are specified in the `/Models` folder, but should conform to:
+## Implemented the DbContext for the Product Service
 
-**Product:**
-```
-{
-  "Id": "01234567-89ab-cdef-0123-456789abcdef",
-  "Name": "Product name",
-  "Description": "Product description",
-  "Price": 123.45,
-  "DeliveryPrice": 12.34
-}
-```
+This is step one of the critical part of this refactor. Instead of relying on an SQL query fest in the controller, I made the switch to use the Entity Framework extensively, so that the application can benefit from features such as DTOs, migrations, seeding, etc. DbSets for Products and ProductOptions were also created.
 
-**Products:**
-```
-{
-  "Items": [
-    {
-      // product
-    },
-    {
-      // product
-    }
-  ]
-}
-```
+## Added DTOs for both Product and Product Option
 
-**Product Option:**
-```
-{
-  "Id": "01234567-89ab-cdef-0123-456789abcdef",
-  "Name": "Product name",
-  "Description": "Product description"
-}
-```
+Allows for an abstraction of the data we want to represent to the client, and further allows for extendibility to prevent errors for anything that is added to the models
 
-**Product Options:**
-```
-{
-  "Items": [
-    {
-      // product option
-    },
-    {
-      // product option
-    }
-  ]
-}
-```
+## Removed methods from models
+
+Methods do not belong in models, business logic is better suited for controllers
+
+## Removed usused isNew from models
+
+Since the methods have been removed from models, the isNew attribute is no longer needed.
+
+## Added foreign key “ProductId” to Product Option model
+
+Now that we are interacting with our database at a greater level, it’s better that we utilise relational tables so that we can leverage SQL relations rather than manual relations in code.
+
+## Added required keyword to Name
+
+Prevent unnamed products or product options from being created
+
+- There would have been more opportunities to create further table constraints across the board, given more time I would have considered it further
+
+## Added migrations and seeds
+
+No more breaking databases and not knowing how to deal with them. These allow a database to be safely scaffolded without harming the contained data.
+
+[Use Code First Migrations to Seed the Database](https://docs.microsoft.com/en-us/aspnet/web-api/overview/data/using-web-api-with-entity-framework/part-3)
+
+If the Database.mdf breaks for some reason, no problem! Just re-migrate a new database and seed it with the initial data provided.
+
+## Overhauling the products controller
+
+### Added better return types
+
+Utilising return types such as `IQueryable<ProductDTO>` and `Task<IActionResult>` made better sense working with Entity Framework moving forward. This way the browser or application receiving responses from this service understands what it’s receiving and why.
+
+### Added response types to GetOne, Create, Update, and Delete endpoints
+
+Better for documenting the information that is being sent
+
+### Switching out to Entity Framework style querying
+
+It looks nicer and it’s easier to read than raw SQL queries. It works with Intellisense and has a decent amount of documentation out of the box.
+
+[Create Data Transfer Objects (DTOs)](https://docs.microsoft.com/en-us/aspnet/web-api/overview/data/using-web-api-with-entity-framework/part-5)
+
+### Search uses a simple string contains method
+
+Felt keeping this one simple was necessary `...Where(p => p.Name.ToLower().Contains(name.ToLower()))...`
+
+## Final Notes
+
+While this is an improvement to the original design, there are definitely areas where I could have improved the application further. There was something that’s making the app run very slow and that would have been something I’d like to tackle.
+
+I wanted to separate the Products Controller into `Products` and `ProductOptions`, however the API endpoints were incredibly intertwined having product options depend on products, I felt there was an argument against refactoring that. If clients are using this API, it makes it hard to overwrite that aspect of the application so I wanted to preserve that just as much as I wanted to refactor it entirely. Thus the controller still remains to be large in size.
+
+I would also have liked to add something to the home content rather than hitting a forbidden 403 page.
+
+Lastly, I tried running this on my Macbook to find that there were too many caveats to getting it to work on MacOS. Visual Studio is really not going well over there! It would have been nice to use something like VSCode on my Mac, but having an application build back using 2014 was never going to play well... at least now we have .NET Core :)
