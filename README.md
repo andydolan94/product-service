@@ -82,8 +82,8 @@ Felt keeping this one simple was necessary `...Where(p => p.Name.ToLower().Conta
 
 While this is an improvement to the original design, there are definitely areas where I could have improved the application further. There was something that’s making the app run very slow and that would have been something I’d like to tackle.
 
-I wanted to separate the Products Controller into `Products` and `ProductOptions`, however the API endpoints were incredibly intertwined having product options depend on products, I felt there was an argument against refactoring that. If clients are using this API, it makes it hard to overwrite that aspect of the application so I wanted to preserve that just as much as I wanted to refactor it entirely. Thus the controller still remains to be large in size.
+I wanted to separate the Products Controller into `Products` and `ProductOptions`, however the API endpoints were incredibly intertwined having product options depend on products, I felt there was an argument against refactoring that. If clients are using this API, it makes it hard to overwrite that aspect of the application so I wanted to preserve that just as much as I wanted to refactor it entirely. Thus the controller remains large in size.
 
-I would also have liked to add something to the home content rather than hitting a forbidden 403 page.
+I would also have liked to add something to the home content rather than being sent to a forbidden 403 page.
 
-Lastly, I tried running this on my Macbook to find that there were too many caveats to getting it to work on MacOS. Visual Studio is really not going well over there! It would have been nice to use something like VSCode on my Mac, but having an application build back using 2014 was never going to play well... at least now we have .NET Core :)
+Lastly, I tried running this on my Macbook to find that there were too many caveats to getting it to work on MacOS. Visual Studio is really not going well over there! It would have been nice to use something like VSCode on my Mac, but having an application built back using Visual Studio 2014 was never going to play well... at least now we have .NET Core :)
